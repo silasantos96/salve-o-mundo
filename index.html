@@ -1,0 +1,2176 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Salve o Mundo! — Versão Melhorada</title>
+<style>
+  body { 
+    background: linear-gradient(135deg, #0b1224 0%, #1a2332 50%, #0b1224 100%); 
+    color: #fff; 
+    font-family: 'Orbitron', sans-serif; 
+    margin: 0; 
+    padding: 0; 
+    min-height: 100vh;
+  }
+  .map { 
+    display: grid; 
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 15px; 
+    margin: 20px; 
+    margin-right: 320px; 
+  }
+  .region { 
+    border: 2px solid #b71c1c; 
+    background: linear-gradient(145deg, #0b1224, #1a2332);
+    padding: 20px; 
+    text-align: center; 
+    cursor: pointer; 
+    min-height: 150px; 
+    position: relative; 
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  }
+  .region:hover { 
+    background: linear-gradient(145deg, #112244, #223355);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+  }
+  .region.selected { 
+    border-color: #4caf50; 
+    background: linear-gradient(145deg, #1a3a1a, #2a4a2a);
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+  }
+  .region.has-hero { 
+    border-color: #2196f3;
+    box-shadow: 0 0 15px rgba(33, 150, 243, 0.2);
+  }
+  .region.villain-defeated {
+    border-color: #666;
+    background: linear-gradient(145deg, #333, #444);
+    opacity: 0.7;
+  }
+  .panel { 
+    position: fixed; 
+    right: 0; 
+    top: 0; 
+    width: 300px; 
+    background: linear-gradient(180deg, #111 0%, #222 100%);
+    height: 100%; 
+    padding: 10px; 
+    overflow-y: auto; 
+    border-left: 3px solid #b71c1c;
+    box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+  }
+  button { 
+    display: block; 
+    width: 100%; 
+    margin: 5px 0; 
+    padding: 12px; 
+    font-size: 16px; 
+    background: linear-gradient(145deg, #b71c1c, #d32f2f);
+    border: none; 
+    color: #fff; 
+    cursor: pointer; 
+    border-radius: 5px;
+    transition: all 0.2s ease;
+    font-weight: bold;
+  }
+  button:hover { 
+    background: linear-gradient(145deg, #d32f2f, #f44336);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  }
+  button:disabled { 
+    background: linear-gradient(145deg, #555, #666);
+    cursor: not-allowed; 
+    transform: none;
+    box-shadow: none;
+  }
+  button:active {
+    transform: translateY(0);
+  }
+  .log { 
+    background-color: #000; 
+    padding: 10px; 
+    height: 200px; 
+    overflow-y: auto; 
+    font-size: 14px; 
+    border-radius: 5px;
+    border: 1px solid #333;
+  }
+  .hero-info { 
+    background: linear-gradient(145deg, #222, #333);
+    padding: 15px; 
+    margin: 10px 0; 
+    border-radius: 8px; 
+    border: 1px solid #444;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+  }
+  .hero-list { 
+    max-height: 150px; 
+    overflow-y: auto; 
+    border-radius: 5px;
+  }
+  .hero-item { 
+    padding: 8px; 
+    margin: 3px 0; 
+    background: linear-gradient(145deg, #333, #444);
+    cursor: pointer; 
+    border-radius: 5px; 
+    transition: all 0.2s ease;
+    border: 1px solid #555;
+  }
+  .hero-item:hover { 
+    background: linear-gradient(145deg, #444, #555);
+    transform: translateX(3px);
+  }
+  .hero-item.selected { 
+    background: linear-gradient(145deg, #4caf50, #66bb6a);
+    border-color: #4caf50;
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+  }
+  .hero-item.dead {
+    background: linear-gradient(145deg, #666, #777);
+    opacity: 0.5;
+    text-decoration: line-through;
+  }
+  .villain-hp { 
+    color: #ff4444; 
+    font-weight: bold; 
+    text-shadow: 0 0 5px rgba(255, 68, 68, 0.5);
+  }
+  .hero-hp { 
+    color: #44ff44; 
+    font-weight: bold; 
+    text-shadow: 0 0 5px rgba(68, 255, 68, 0.5);
+  }
+  .equipment-list { 
+    font-size: 12px; 
+    color: #aaa; 
+    margin-top: 5px;
+    padding: 5px;
+    background-color: rgba(0,0,0,0.3);
+    border-radius: 3px;
+  }
+  .status-effects { 
+    font-size: 11px; 
+    color: #ffaa00; 
+    margin-top: 5px;
+    padding: 3px 6px;
+    background-color: rgba(255, 170, 0, 0.2);
+    border-radius: 3px;
+    border: 1px solid #ffaa00;
+  }
+  .turn-counter { 
+    background: linear-gradient(145deg, #333, #444);
+    padding: 15px; 
+    margin: 10px 0; 
+    text-align: center; 
+    font-weight: bold; 
+    border-radius: 8px;
+    border: 2px solid #b71c1c;
+    font-size: 18px;
+    text-shadow: 0 0 10px rgba(183, 28, 28, 0.5);
+  }
+  .damage-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ff4444;
+    font-weight: bold;
+    font-size: 24px;
+    pointer-events: none;
+    animation: damageFloat 1s ease-out forwards;
+    z-index: 1000;
+  }
+  .heal-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #44ff44;
+    font-weight: bold;
+    font-size: 20px;
+    pointer-events: none;
+    animation: healFloat 1s ease-out forwards;
+    z-index: 1000;
+  }
+  @keyframes damageFloat {
+    0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -150%) scale(1.2); }
+  }
+  @keyframes healFloat {
+    0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -150%) scale(1.1); }
+  }
+  .victory-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(145deg, #4caf50, #66bb6a);
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    z-index: 2000;
+    animation: victoryPulse 2s ease-in-out infinite;
+  }
+  .defeat-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(145deg, #f44336, #e57373);
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    z-index: 2000;
+    animation: defeatShake 1s ease-in-out;
+  }
+  @keyframes victoryPulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.05); }
+  }
+  @keyframes defeatShake {
+    0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+    25% { transform: translate(-50%, -50%) rotate(-2deg); }
+    75% { transform: translate(-50%, -50%) rotate(2deg); }
+  }
+</style>
+</head>
+<body>
+<h1>Salve o Mundo! — Versão Melhorada</h1>
+<div class="map" id="map"></div>
+<div class="panel">
+  <div class="turn-counter" id="turnCounter">Turno: 1</div>
+  
+  <h2>Selecionar Herói</h2>
+  <div class="hero-list" id="heroList"></div>
+  
+  <h2>Herói Selecionado</h2>
+  <div class="hero-info" id="heroInfo">Nenhum herói selecionado</div>
+  
+  <h2>Ações</h2>
+  <button id="rollDiceBtn" onclick="rollDice()">Rolar Dado</button>
+  <button id="attackBtn" onclick="attack()" disabled>Atacar</button>
+  <button id="specialBtn" onclick="special()" disabled>Usar Habilidade</button>
+  <button id="moveBtn" onclick="moveHero()" disabled>Mover</button>
+  <button id="healBtn" onclick="healHero()" disabled>Curar</button>
+  <button id="pickEquipmentBtn" onclick="pickEquipment()" disabled>Pegar Equipamento</button>
+  <button id="endTurnBtn" onclick="endTurn()">Fim de Turno</button>
+  
+  <h3>Log</h3>
+  <div class="log" id="log"></div>
+</div>
+
+<script src="heroes_data.js"></script>
+<script>
+// Estado do jogo
+let gameState = {
+  turn: 1,
+  selectedHero: null,
+  selectedRegion: null,
+  diceResult: null,
+  actionsUsed: {
+    attack: false,
+    special: false,
+    move: false,
+    heal: false,
+    equipment: false
+  }
+};
+
+// Lista de fichas de equipamento
+const equipmentDeck = [
+  {name: 'Arco Mágico', effect: h => { h.attackBoost = (h.attackBoost || 0) + 3; log(`${h.name} usa Arco Mágico e ganha +3 ataque.`); }},
+  {name: 'Luvas de Poder', effect: h => {h.attackBoost = (h.attackBoost || 0) + 2; log(`${h.name} recebe +2 ataque.`);}},
+  {name: 'Elmo de Cura', effect: h => {h.hp = Math.min(h.hp + 3, h.maxHp); log(`${h.name} cura 3 HP.`);}},
+  {name: 'Anel de Teletransporte', effect: h => {h.canTeleport = true; log(`${h.name} pode se mover para qualquer região.`);}},
+  {name: 'Amuleto de Resistência', effect: h => {h.defenseBoost = (h.defenseBoost || 0) + 2; log(`${h.name} recebe +2 defesa.`);}},
+  {name: 'Capa de Invisibilidade', effect: h => {h.invisible = true; log(`${h.name} ficará invisível no próximo turno.`);}},
+  {name: 'Bastão de Energia', effect: h => {h.areaAttack = true; log(`${h.name} pode atacar todos os vilões da região.`);}},
+  {name: 'Cajado de Gelo', effect: h => {h.freezeAttack = true; log(`${h.name} pode congelar vilões por 1 turno.`);}},
+  {name: 'Escudo de Energia', effect: h => {h.reflectDamage = true; log(`${h.name} reflete ataques de volta.`);}},
+  {name: 'Poção Mágica', effect: h => {h.hp = h.maxHp; log(`${h.name} recupera todo HP.`);}}
+];
+
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+// Simulação de roster
+let villains = villainsData;
+let heroes = heroesData;
+
+// Distribuir equipamentos aleatórios (2 por região)
+function dealEquipments() {
+  const deck = shuffle([...equipmentDeck]);
+  return [deck.pop(), deck.pop()].map(eq => ({...eq, hidden: true}));
+}
+
+const regions = [
+  {name: 'Cidade', villain: villains[0], heroes: [], equipments: dealEquipments()},
+  {name: 'Floresta', villain: villains[1], heroes: [], equipments: dealEquipments()},
+  {name: 'Laboratório', villain: villains[2], heroes: [], equipments: dealEquipments()},
+  {name: 'Montanhas', villain: villains[3], heroes: [], equipments: dealEquipments()},
+  {name: 'Costas', villain: villains[4], heroes: [], equipments: dealEquipments()}
+];
+
+// Distribuir heróis aleatoriamente nas regiões
+heroes.forEach((hero, index) => {
+  const regionIndex = index % regions.length;
+  regions[regionIndex].heroes.push(hero);
+  hero.region = regionIndex;
+});
+
+function initMap(){
+  const map = document.getElementById('map');
+  map.innerHTML = '';
+  regions.forEach((r, idx) => {
+    const div = document.createElement('div');
+    div.className = 'region';
+    
+    // Adicionar classes visuais baseadas no estado
+    if (gameState.selectedRegion === idx) {
+      div.classList.add('selected');
+    }
+    if (r.heroes.length > 0) {
+      div.classList.add('has-hero');
+    }
+    if (!r.villain || r.villain.hp <= 0) {
+      div.classList.add('villain-defeated');
+    }
+    
+    let heroList = r.heroes.map(h => `${h.name} <span class="hero-hp">(${h.hp}/${h.maxHp})</span>`).join('<br>') || 'Nenhum';
+    let eqCount = r.equipments.filter(e => e.hidden).length;
+    let villainInfo = r.villain && r.villain.hp > 0 ? 
+      `${r.villain.name} <span class="villain-hp">(${r.villain.hp}/${r.villain.maxHp})</span>` : 
+      '<span style="color: #666;">Derrotado ✓</span>';
+    
+    div.innerHTML = `
+      <strong style="font-size: 16px; display: block; margin-bottom: 8px;">${r.name}</strong>
+      <div style="margin: 5px 0; font-size: 13px;">🦹 ${villainInfo}</div>
+      <div style="margin: 5px 0; font-size: 11px;">🦸 ${heroList}</div>
+      <div style="margin: 5px 0; font-size: 10px; color: #aaa;">📦 Equipamentos: ${eqCount}</div>
+    `;
+    
+    div.onclick = () => { 
+      gameState.selectedRegion = idx; 
+      log(`Região ${r.name} selecionada.`); 
+      updateUI();
+    };
+    map.appendChild(div);
+  });
+}
+
+function initHeroList() {
+  const heroListDiv = document.getElementById('heroList');
+  heroListDiv.innerHTML = '';
+  heroes.forEach(hero => {
+    const div = document.createElement('div');
+    div.className = 'hero-item';
+    if (gameState.selectedHero === hero) {
+      div.classList.add('selected');
+    }
+    if (hero.hp <= 0) {
+      div.classList.add('dead');
+    }
+    div.innerHTML = `${hero.name} <span class="hero-hp">(${hero.hp}/${hero.maxHp})</span>`;
+    div.onclick = () => {
+      if (hero.hp > 0) {
+        selectHero(hero);
+      } else {
+        log(`${hero.name} está morto e não pode ser selecionado.`);
+      }
+    };
+    heroListDiv.appendChild(div);
+  });
+}
+
+function selectHero(hero){
+  gameState.selectedHero = hero;
+  updateHeroInfo();
+  updateUI();
+  log(`${hero.name} selecionado.`);
+}
+
+function updateHeroInfo() {
+  const heroInfoDiv = document.getElementById('heroInfo');
+  if (!gameState.selectedHero) {
+    heroInfoDiv.innerHTML = 'Nenhum herói selecionado';
+    return;
+  }
+  
+  const hero = gameState.selectedHero;
+  const totalAttack = hero.attack + (hero.attackBoost || 0);
+  const totalDefense = hero.defense + (hero.defenseBoost || 0);
+  const currentRegion = regions[hero.region];
+  
+  let statusEffects = [];
+  if (hero.invisible) statusEffects.push('Invisível');
+  if (hero.canTeleport) statusEffects.push('Teletransporte');
+  if (hero.areaAttack) statusEffects.push('Ataque em Área');
+  if (hero.freezeAttack) statusEffects.push('Ataque Congelante');
+  if (hero.reflectDamage) statusEffects.push('Reflexão');
+  if (hero.rangedAttack) statusEffects.push('Ataque à Distância');
+  
+  heroInfoDiv.innerHTML = `
+    <strong>${hero.name}</strong><br>
+    <span class="hero-hp">HP: ${hero.hp}/${hero.maxHp}</span><br>
+    Ataque: ${totalAttack}<br>
+    Defesa: ${totalDefense}<br>
+    Região: ${currentRegion.name}<br>
+    <div style="margin: 5px 0; padding: 5px; background-color: rgba(76, 175, 80, 0.2); border-radius: 3px; font-size: 11px;">
+      <strong>Habilidade:</strong> ${hero.abilityDescription}
+    </div>
+    ${statusEffects.length > 0 ? `<div class="status-effects">Efeitos: ${statusEffects.join(', ')}</div>` : ''}
+    ${hero.equipment.length > 0 ? `<div class="equipment-list">Equipamentos: ${hero.equipment.map(e => e.name).join(', ')}</div>` : ''}
+  `;
+}
+
+function updateUI() {
+  initMap();
+  initHeroList();
+  updateHeroInfo();
+  updateButtons();
+  document.getElementById('turnCounter').textContent = `Turno: ${gameState.turn}`;
+}
+
+function updateButtons() {
+  const hasHero = gameState.selectedHero !== null;
+  const hasRegion = gameState.selectedRegion !== null;
+  const heroInSelectedRegion = hasHero && hasRegion && gameState.selectedHero.region === gameState.selectedRegion;
+  const hasVillainInRegion = hasRegion && regions[gameState.selectedRegion].villain && regions[gameState.selectedRegion].villain.hp > 0;
+  const hasEquipmentInRegion = hasRegion && regions[gameState.selectedRegion].equipments.some(e => e.hidden);
+  
+  document.getElementById('attackBtn').disabled = !hasHero || !heroInSelectedRegion || !hasVillainInRegion || gameState.actionsUsed.attack;
+  document.getElementById('specialBtn').disabled = !hasHero || gameState.actionsUsed.special;
+  document.getElementById('moveBtn').disabled = !hasHero || gameState.actionsUsed.move;
+  document.getElementById('healBtn').disabled = !hasHero || gameState.selectedHero.hp >= gameState.selectedHero.maxHp || gameState.actionsUsed.heal;
+  document.getElementById('pickEquipmentBtn').disabled = !hasHero || !heroInSelectedRegion || !hasEquipmentInRegion || gameState.actionsUsed.equipment;
+}
+
+function rollDice(){
+  if (!gameState.selectedHero) { 
+    log('Selecione um herói primeiro!'); 
+    return; 
+  }
+  gameState.diceResult = Math.floor(Math.random() * 6) + 1;
+  log(`${gameState.selectedHero.name} rolou o dado: ${gameState.diceResult}`);
+function attack(){
+  if (!gameState.selectedHero || gameState.actionsUsed.attack) return;
+  if (gameState.selectedRegion === null) {
+    log("Selecione uma região primeiro.");
+    return;
+  }
+  
+  const region = regions[gameState.selectedRegion];
+  const hero = gameState.selectedHero;
+  
+  if (hero.region !== gameState.selectedRegion && !hero.rangedAttack) {
+    log(`${hero.name} não está na região selecionada.`);
+    return;
+  }
+  
+  if (!region.villain || region.villain.hp <= 0) {
+    log("Não há vilão para atacar nesta região.");
+    return;
+  }
+  
+  if (gameState.diceResult === null) {
+    log("Por favor, role o dado primeiro!");
+    return;
+  }
+
+  const villain = region.villain;
+  const attackChosen = hero.attacks[gameState.diceResult - 1]; // -1 porque o dado vai de 1 a 6
+  log(`${hero.name} usa ${attackChosen.name}: ${attackChosen.description}`);
+
+  let damageDealt = 0;
+  let healAmount = 0;
+  let villainFrozen = false;
+  let heroProtected = false;
+  let villainStunned = false;
+  let teleported = false;
+  let allHeroesHealed = false;
+  let allVillainsDamaged = false;
+  let selfDamage = 0;
+  let defenseBoost = 0;
+  let attackBoost = 0;
+  let heroInvisible = false;
+  let villainAttackReduced = 0;
+  let heroEscaped = false;
+  let villainImmobilized = false;
+
+  switch(attackChosen.name) {
+    case 'Amplificação de Poder':
+      // Implementar lógica de amplificação de poder em um aliado
+      log('Habilidade de Amplificação de Poder precisa de seleção de alvo.');
+      break;
+    case 'Golpe Telecinético':
+    case 'Investida Furiosa':
+    case 'Raio Cósmico':
+    case 'Relâmpago':
+    case 'Golpe Feroz':
+    case 'Soco Sônico':
+    case 'Presas Afiadas':
+    case 'Ataque básico':
+    case 'Golpe de sombra':
+    case 'Raio de Luz':
+    case 'Raio laser':
+    case 'Golpe de areia':
+    case 'Soco devastador':
+    case 'Flecha de fogo':
+    case 'Esticar soco':
+    case 'Corte relâmpago':
+    case 'Golpe Magnético':
+    case 'Golpe de Vinha':
+    case 'Pó mágico':
+    case 'Bola de Fogo':
+    case 'Disparo de laser simples':
+    case 'Soco de ferro':
+    case 'Ataque Veloz':
+    case 'Projéteis telecinéticos':
+    case 'Explosão de Empatia':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Onda de Choque Mental':
+    case 'Tempestade de Gelo':
+    case 'Redemoinho de Flechas':
+    case 'Salto Explosivo':
+    case 'Arremesso de Granada':
+    case 'Choque Elétrico':
+    case 'Tempestade de Fogo':
+    case 'Explosão Estelar':
+    case 'Tornado Sônico':
+    case 'Uivo Ensurdecedor':
+    case 'Rajada temporal':
+    case 'Rajada sônica':
+    case 'Explosão de Luz':
+    case 'Granada de pulso':
+    case 'Tornado de areia':
+    case 'Chuva de areia':
+    case 'Furacão':
+    case 'Tempestade elétrica':
+    case 'Pisão sísmico':
+    case 'Sopro da floresta':
+    case 'Chicote elástico':
+    case 'Golpe giratório':
+    case 'Onda Magnética':
+    case 'Tempestade Magnética':
+    case 'Florescência':
+    case 'Frenesi de asas':
+    case 'Pulso eletromagnético':
+    case 'Impacto Sônico':
+    case 'Explosão de Energia':
+    case 'Terremoto':
+    case 'Tempestade Vegetal':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      allVillainsDamaged = true;
+      break;
+    case 'Ataque Mental Preciso':
+    case 'Garras Afiadas':
+    case 'Raio de Fogo':
+    case 'Arremesso':
+    case 'Descarga Elétrica':
+    case 'Investida Enfurecida':
+    case 'Implosão Estelar':
+    case 'Ataque Aéreo':
+    case 'Garras Mortais':
+    case 'Corte crescente':
+    case 'Crescimento Acelerado':
+    case 'Raio de luz':
+    case 'Disparo triplo':
+    case 'Golpe de martelo':
+    case 'Investida Fantasma':
+    case 'Deslocamento de objetos':
+    case 'Golpe Aéreo Devastador':
+    case 'Soco Dourado':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Barreira Psíquica':
+    case 'Escudo Mágico':
+    case 'Camuflagem Felina':
+    case 'Escudo Divino':
+    case 'Teleporte Tático':
+    case 'Barreira Teleportada':
+    case 'Proteção impenetrável':
+    case 'Escudo de cipó':
+    case 'Defesa perfeita':
+    case 'Escudo de Metal':
+    case 'Escudo de Luz':
+    case 'Campo de força':
+    case 'Escudo telecinético':
+    case 'Aura Calmante':
+    case 'Proteção Celestial':
+    case 'Campo de Força Reluzente':
+    case 'Escudo de energia':
+      heroProtected = true;
+      log(`${hero.name} se protegeu!`);
+      break;
+    case 'Manipulação Mental':
+    case 'Encantamento':
+      villainStunned = true;
+      log(`${hero.name} controlou a mente de ${villain.name}!`);
+      break;
+    case 'Cura Mágica':
+    case 'Elmo de Cura':
+    case 'Poção Mágica':
+    case 'Teleporte de Suporte':
+    case 'Campo Elétrico':
+    case 'Reparos Automáticos':
+      healAmount = parseInt(attackChosen.description.match(/Recupera (\d+) pontos de vida/)?.[1] || 0);
+      if (isNaN(healAmount)) healAmount = parseInt(attackChosen.description.match(/Adiciona (\d+) ponto de vida/)?.[1] || 0);
+      if (isNaN(healAmount)) healAmount = hero.maxHp; // Poção Mágica
+      hero.hp = Math.min(hero.hp + healAmount, hero.maxHp);
+      log(`${hero.name} recuperou ${healAmount} HP.`);
+      showHealIndicator(document.getElementById('heroInfo'), healAmount);
+      break;
+    case 'Teleporte':
+    case 'Teletransporte Cósmico':
+    case 'Teleporte em Massa':
+    case 'Voo Relâmpago':
+      teleported = true;
+      log(`${hero.name} se teletransportou!`);
+      break;
+    case 'Ataque Duplo':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      // A descrição do ataque duplo do Kriegen é diferente, precisa de tratamento especial
+      if (hero.name === 'Kriegen') {
+        damageDealt = 1; // Cada ataque causa 1 de dano, são 2 ataques
+        villain.hp = Math.max(0, villain.hp - damageDealt);
+        log(`${hero.name} ataca ${villain.name} causando ${damageDealt} de dano!`);
+        showDamageIndicator(document.querySelector(`#map div:nth-child(${gameState.selectedRegion + 1})`), damageDealt);
+        damageDealt = 1;
+      }
+      break;
+    case 'Rugido Atordoante':
+    case 'Eletricidade Estática':
+    case 'Campo Gravitacional':
+    case 'Ataque de Paralisia':
+    case 'Ilusão sonora':
+    case 'Raio Cegante':
+    case 'Choque elétrico':
+    case 'Areia movediça':
+    case 'Imobilização telecinética':
+    case 'Desespero Manipulado':
+    case 'Furacão Aéreo':
+    case 'Carga Blindada':
+    case 'Tempestade temporal':
+      villainStunned = true;
+      log(`${villain.name} foi paralisado/atordoado!`);
+      break;
+    case 'Salto Ágil':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) ponto de dano/)?.[1] || 0);
+      heroProtected = true;
+      break;
+    case 'Grito de Guerra':
+      if (hero.name === 'Kriegen') {
+        hero.hp = Math.min(hero.hp + 1, hero.maxHp);
+        hero.attackBoost = (hero.attackBoost || 0) + 1; // Para o próximo ataque
+        log(`${hero.name} recupera 1 HP e ganha +1 ataque no próximo ataque!`);
+      } else if (hero.name === 'Major Duk') {
+        damageDealt = 1; // Dano a todos os vilões
+        defenseBoost = 1; // Aumenta defesa de todos os heróis
+        allVillainsDamaged = true;
+        log(`${hero.name} aumenta a defesa de todos os heróis em 1!`);
+      }
+      break;
+    case 'Ataque Relâmpago':
+      damageDealt = parseInt(attackChosen.description.match(/Dano de (\d+) pontos de vida/)[1]);
+      selfDamage = 2;
+      hero.hp = Math.max(0, hero.hp - selfDamage);
+      log(`${hero.name} recebe ${selfDamage} de dano de volta!`);
+      showDamageIndicator(document.getElementById('heroInfo'), selfDamage);
+      break;
+    case 'Carga Total':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      selfDamage = 2;
+      hero.hp = Math.max(0, hero.hp - selfDamage);
+      log(`${hero.name} perde ${selfDamage} HP!`);
+      showDamageIndicator(document.getElementById('heroInfo'), selfDamage);
+      break;
+    case 'Salto Poderoso':
+      heroEscaped = true;
+      log(`${hero.name} esquivou do ataque!`);
+      break;
+    case 'Barreira de Fogo':
+      heroProtected = true;
+      damageDealt = 1; // Dano aos inimigos que se aproximarem
+      allVillainsDamaged = true;
+      break;
+    case 'Fúria Ardente':
+      damageDealt = parseInt(attackChosen.description.match(/causa (\d+) pontos de dano/)[1]);
+      break;
+    case 'Invocação de Lobos':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      allVillainsDamaged = true;
+      break;
+    case 'Reflexos aprimorados':
+      heroEscaped = true;
+      log(`${hero.name} escapou do ataque!`);
+      break;
+    case 'Contragolpe':
+      heroEscaped = true;
+      damageDealt = 2;
+      log(`${hero.name} contra-atacou!`);
+      break;
+    case 'Escudo de areia':
+      heroProtected = true;
+      log(`${hero.name} se protegeu com escudo de areia!`);
+      break;
+    case 'Nevasca':
+      damageDealt = 1;
+      villainAttackReduced = 2;
+      allVillainsDamaged = true;
+      log(`${villain.name} teve seu ataque reduzido em ${villainAttackReduced}!`);
+      break;
+    case 'Arremesso de objetos':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) ponto de dano/)?.[1] || 0);
+      break;
+    case 'Lança de madeira':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Punho Elástico':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Vórtice de areia':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      allVillainsDamaged = true;
+      break;
+    case 'Dispersão de Luz':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Aniquilação':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Uppercut':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Dança dos Ventos':
+      damageDealt = parseInt(attackChosen.description.match(/causando dano de (\d+) pontos de vida/)[1]);
+      break;
+    case 'Desorientação':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      allVillainsDamaged = true;
+      villainStunned = true;
+      break;
+    case 'Soco Dourado':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Raio Solar':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Arremesso de escombros':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Míssil guiado':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Corte crescente':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Voo da borboleta':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Transformação em Animal':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Ataque Furtivo':
+      damageDealt = parseInt(attackChosen.description.match(/causando dano de (\d+) pontos de vida/)[1]);
+      break;
+    case 'Ataque telecinético':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Crescimento Acelerado':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      allVillainsDamaged = true;
+      break;
+    case 'Garras de raposa':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) ponto de dano/)[1]);
+      break;
+    case 'Machado de pedra':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) ponto de dano/)[1]);
+      break;
+    case 'Rasteira':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) ponto de dano/)?.[1] || 0);
+      break;
+    case 'Chute giratório':
+      damageDealt = parseInt(attackChosen.description.match(/causa (\d+) pontos de danos/)[1]);
+      break;
+    case 'Socos rápidos':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Lâmina de Luz':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Lançamento de estilhaços':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Raízes Sufocantes':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Enredar':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) ponto de dano/)?.[1] || 0);
+      villainImmobilized = true;
+      break;
+    case 'Pó mágico':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) ponto de dano/)[1]);
+      villainAttackReduced = 1;
+      break;
+    case 'Ataque de fada':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Ilusão':
+      villainStunned = true;
+      break;
+    case 'Barreira Elemental':
+      heroProtected = true;
+      break;
+    case 'Modo rajada':
+      damageDealt = parseInt(attackChosen.description.match(/causa (\d+) pontos de dano/)[1]);
+      break;
+    case 'Carga Blindada':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      villainStunned = true;
+      break;
+    case 'Absorção Emocional':
+      defenseBoost = 2; // Reduz 2 pontos de dano do vilão
+      break;
+    case 'Infusão de Coragem':
+      attackBoost = 2; // Aumenta o dano dos ataques de um aliado em 2
+      log('Habilidade de Infusão de Coragem precisa de seleção de alvo.');
+      break;
+    case 'Vórtice de areia':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      allVillainsDamaged = true;
+      break;
+    case 'Ataque de Fúria':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      allVillainsDamaged = true;
+      break;
+    case 'Grito de Guerra':
+      if (hero.name === 'Kriegen') {
+        hero.hp = Math.min(hero.hp + 1, hero.maxHp);
+        hero.attackBoost = (hero.attackBoost || 0) + 1; // Para o próximo ataque
+        log(`${hero.name} recupera 1 HP e ganha +1 ataque no próximo ataque!`);
+      } else if (hero.name === 'Major Duk') {
+        damageDealt = 1; // Dano a todos os vilões
+        defenseBoost = 1; // Aumenta defesa de todos os heróis
+        allVillainsDamaged = true;
+        log(`${hero.name} aumenta a defesa de todos os heróis em 1!`);
+      }
+      break;
+    case 'Paradoxo':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      selfDamage = 2;
+      hero.hp = Math.max(0, hero.hp - selfDamage);
+      log(`${hero.name} perde ${selfDamage} HP!`);
+      showDamageIndicator(document.getElementById('heroInfo'), selfDamage);
+      break;
+    case 'Raio':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Tornado':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Chuva ácida':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      allVillainsDamaged = true;
+      break;
+    case 'Agarrão poderoso':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Sopro da floresta':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      allVillainsDamaged = true;
+      break;
+    case 'Imã Poderoso':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      allVillainsDamaged = true;
+      villainImmobilized = true;
+      break;
+    case 'Levitação':
+      heroEscaped = true;
+      break;
+    case 'Proteção Celestial':
+      heroProtected = true;
+      break;
+    case 'Voo Relâmpago':
+      teleported = true;
+      break;
+    default:
+      log('Ataque não implementado: ' + attackChosen.name);
+      break;
+  }
+
+  if (allVillainsDamaged) {
+    regions[hero.region].villains.forEach(v => {
+      if (v.hp > 0) {
+        const damage = Math.max(1, damageDealt - (v.defense || 0));
+        v.hp = Math.max(0, v.hp - damage);
+        log(`${hero.name} ataca ${v.name} causando ${damage} de dano!`);
+        showDamageIndicator(document.querySelector(`#map div:nth-child(${gameState.selectedRegion + 1})`), damage);
+      }
+    });
+  } else if (damageDealt > 0) {
+    const damage = Math.max(1, damageDealt - (villain.defense || 0));
+    villain.hp = Math.max(0, villain.hp - damage);
+    log(`${hero.name} ataca ${villain.name} causando ${damage} de dano!`);
+    showDamageIndicator(document.querySelector(`#map div:nth-child(${gameState.selectedRegion + 1})`), damage);
+  }
+
+  if (villainFrozen) villain.frozen = true;
+  if (villainStunned) villain.stunned = true;
+  if (villainImmobilized) villain.immobilized = true;
+  if (villainAttackReduced > 0) villain.attack -= villainAttackReduced;
+
+  gameState.actionsUsed.attack = true;
+  
+  if (villain.hp <= 0) {
+    log(`${villain.name} foi derrotado!`);
+    region.villain = null;
+    checkVictory();
+  }
+  
+  updateUI();
+}fDamage = 0;
+  let defenseBoost = 0;
+  let attackBoost = 0;
+  let heroInvisible = false;
+  let villainAttackReduced = 0;
+  let heroEscaped = false;
+  let villainImmobilized = false;
+
+  switch(attackChosen.name) {
+    case 'Amplificação de Poder':
+      // Implementar lógica de amplificação de poder em um aliado
+      log('Habilidade de Amplificação de Poder precisa de seleção de alvo.');
+      break;
+    case 'Golpe Telecinético':
+    case 'Investida Furiosa':
+    case 'Raio Cósmico':
+    case 'Relâmpago':
+    case 'Golpe Feroz':
+    case 'Soco Sônico':
+    case 'Presas Afiadas':
+    case 'Ataque básico':
+    case 'Golpe de sombra':
+    case 'Raio de Luz':
+    case 'Raio laser':
+    case 'Golpe de areia':
+    case 'Soco devastador':
+    case 'Flecha de fogo':
+    case 'Esticar soco':
+    case 'Corte relâmpago':
+    case 'Golpe Magnético':
+    case 'Golpe de Vinha':
+    case 'Pó mágico':
+    case 'Bola de Fogo':
+    case 'Disparo de laser simples':
+    case 'Soco de ferro':
+    case 'Ataque Veloz':
+    case 'Projéteis telecinéticos':
+    case 'Explosão de Empatia':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Onda de Choque Mental':
+    case 'Tempestade de Gelo':
+    case 'Redemoinho de Flechas':
+    case 'Salto Explosivo':
+    case 'Arremesso de Granada':
+    case 'Choque Elétrico':
+    case 'Tempestade de Fogo':
+    case 'Explosão Estelar':
+    case 'Tornado Sônico':
+    case 'Uivo Ensurdecedor':
+    case 'Rajada temporal':
+    case 'Rajada sônica':
+    case 'Explosão de Luz':
+    case 'Granada de pulso':
+    case 'Tornado de areia':
+    case 'Chuva de areia':
+    case 'Furacão':
+    case 'Tempestade elétrica':
+    case 'Pisão sísmico':
+    case 'Sopro da floresta':
+    case 'Chicote elástico':
+    case 'Golpe giratório':
+    case 'Onda Magnética':
+    case 'Tempestade Magnética':
+    case 'Florescência':
+    case 'Frenesi de asas':
+    case 'Pulso eletromagnético':
+    case 'Impacto Sônico':
+    case 'Explosão de Energia':
+    case 'Terremoto':
+    case 'Tempestade Vegetal':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      allVillainsDamaged = true;
+      break;
+    case 'Ataque Mental Preciso':
+    case 'Garras Afiadas':
+    case 'Raio de Fogo':
+    case 'Arremesso':
+    case 'Descarga Elétrica':
+    case 'Investida Enfurecida':
+    case 'Implosão Estelar':
+    case 'Ataque Aéreo':
+    case 'Garras Mortais':
+    case 'Corte crescente':
+    case 'Crescimento Acelerado':
+    case 'Raio de luz':
+    case 'Disparo triplo':
+    case 'Golpe de martelo':
+    case 'Investida Fantasma':
+    case 'Deslocamento de objetos':
+    case 'Golpe Aéreo Devastador':
+    case 'Soco Dourado':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Barreira Psíquica':
+    case 'Escudo Mágico':
+    case 'Camuflagem Felina':
+    case 'Escudo Divino':
+    case 'Teleporte Tático':
+    case 'Barreira Teleportada':
+    case 'Proteção impenetrável':
+    case 'Escudo de cipó':
+    case 'Defesa perfeita':
+    case 'Escudo de Metal':
+    case 'Escudo de Luz':
+    case 'Campo de força':
+    case 'Escudo telecinético':
+    case 'Aura Calmante':
+    case 'Proteção Celestial':
+    case 'Campo de Força Reluzente':
+    case 'Escudo de energia':
+      heroProtected = true;
+      log(`${hero.name} se protegeu!`);
+      break;
+    case 'Manipulação Mental':
+    case 'Encantamento':
+      villainStunned = true;
+      log(`${hero.name} controlou a mente de ${villain.name}!`);
+      break;
+    case 'Cura Mágica':
+    case 'Elmo de Cura':
+    case 'Poção Mágica':
+    case 'Teleporte de Suporte':
+    case 'Campo Elétrico':
+    case 'Reparos Automáticos':
+      healAmount = parseInt(attackChosen.description.match(/Recupera (\d+) pontos de vida/)?.[1] || 0);
+      if (isNaN(healAmount)) healAmount = parseInt(attackChosen.description.match(/Adiciona (\d+) ponto de vida/)?.[1] || 0);
+      if (isNaN(healAmount)) healAmount = hero.maxHp; // Poção Mágica
+      hero.hp = Math.min(hero.hp + healAmount, hero.maxHp);
+      log(`${hero.name} recuperou ${healAmount} HP.`);
+      showHealIndicator(document.getElementById('heroInfo'), healAmount);
+      break;
+    case 'Teleporte':
+    case 'Teletransporte Cósmico':
+    case 'Teleporte em Massa':
+    case 'Voo Relâmpago':
+      teleported = true;
+      log(`${hero.name} se teletransportou!`);
+      break;
+    case 'Ataque Duplo':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      // A descrição do ataque duplo do Kriegen é diferente, precisa de tratamento especial
+      if (hero.name === 'Kriegen') {
+        damageDealt = 1; // Cada ataque causa 1 de dano, são 2 ataques
+        villain.hp = Math.max(0, villain.hp - damageDealt);
+        log(`${hero.name} ataca ${villain.name} causando ${damageDealt} de dano!`);
+        showDamageIndicator(document.querySelector(`#map div:nth-child(${gameState.selectedRegion + 1})`), damageDealt);
+        damageDealt = 1;
+      }
+      break;
+    case 'Rugido Atordoante':
+    case 'Eletricidade Estática':
+    case 'Campo Gravitacional':
+    case 'Ataque de Paralisia':
+    case 'Ilusão sonora':
+    case 'Raio Cegante':
+    case 'Choque elétrico':
+    case 'Areia movediça':
+    case 'Imobilização telecinética':
+    case 'Desespero Manipulado':
+    case 'Furacão Aéreo':
+    case 'Carga Blindada':
+    case 'Tempestade temporal':
+      villainStunned = true;
+      log(`${villain.name} foi paralisado/atordoado!`);
+      break;
+    case 'Salto Ágil':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) ponto de dano/)?.[1] || 0);
+      heroProtected = true;
+      break;
+    case 'Grito de Guerra':
+      if (hero.name === 'Kriegen') {
+        hero.hp = Math.min(hero.hp + 1, hero.maxHp);
+        hero.attackBoost = (hero.attackBoost || 0) + 1; // Para o próximo ataque
+        log(`${hero.name} recupera 1 HP e ganha +1 ataque no próximo ataque!`);
+      } else if (hero.name === 'Major Duk') {
+        damageDealt = 1; // Dano a todos os vilões
+        defenseBoost = 1; // Aumenta defesa de todos os heróis
+        allVillainsDamaged = true;
+        log(`${hero.name} aumenta a defesa de todos os heróis em 1!`);
+      }
+      break;
+    case 'Ataque Relâmpago':
+      damageDealt = parseInt(attackChosen.description.match(/Dano de (\d+) pontos de vida/)[1]);
+      selfDamage = 2;
+      hero.hp = Math.max(0, hero.hp - selfDamage);
+      log(`${hero.name} recebe ${selfDamage} de dano de volta!`);
+      showDamageIndicator(document.getElementById('heroInfo'), selfDamage);
+      break;
+    case 'Carga Total':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      selfDamage = 2;
+      hero.hp = Math.max(0, hero.hp - selfDamage);
+      log(`${hero.name} perde ${selfDamage} HP!`);
+      showDamageIndicator(document.getElementById('heroInfo'), selfDamage);
+      break;
+    case 'Salto Poderoso':
+      heroEscaped = true;
+      log(`${hero.name} esquivou do ataque!`);
+      break;
+    case 'Barreira de Fogo':
+      heroProtected = true;
+      damageDealt = 1; // Dano aos inimigos que se aproximarem
+      allVillainsDamaged = true;
+      break;
+    case 'Fúria Ardente':
+      damageDealt = parseInt(attackChosen.description.match(/causa (\d+) pontos de dano/)[1]);
+      break;
+    case 'Invocação de Lobos':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      allVillainsDamaged = true;
+      break;
+    case 'Reflexos aprimorados':
+      heroEscaped = true;
+      log(`${hero.name} escapou do ataque!`);
+      break;
+    case 'Contragolpe':
+      heroEscaped = true;
+      damageDealt = 2;
+      log(`${hero.name} contra-atacou!`);
+      break;
+    case 'Escudo de areia':
+      heroProtected = true;
+      log(`${hero.name} se protegeu com escudo de areia!`);
+      break;
+    case 'Nevasca':
+      damageDealt = 1;
+      villainAttackReduced = 2;
+      allVillainsDamaged = true;
+      log(`${villain.name} teve seu ataque reduzido em ${villainAttackReduced}!`);
+      break;
+    case 'Arremesso de objetos':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) ponto de dano/)?.[1] || 0);
+      break;
+    case 'Lança de madeira':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Punho Elástico':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Vórtice de areia':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      allVillainsDamaged = true;
+      break;
+    case 'Dispersão de Luz':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Aniquilação':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Uppercut':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Dança dos Ventos':
+      damageDealt = parseInt(attackChosen.description.match(/causando dano de (\d+) pontos de vida/)[1]);
+      break;
+    case 'Desorientação':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      allVillainsDamaged = true;
+      villainStunned = true;
+      break;
+    case 'Soco Dourado':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Raio Solar':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Arremesso de escombros':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Míssil guiado':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Corte crescente':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Voo da borboleta':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Transformação em Animal':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Ataque Furtivo':
+      damageDealt = parseInt(attackChosen.description.match(/causando dano de (\d+) pontos de vida/)[1]);
+      break;
+    case 'Ataque telecinético':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Crescimento Acelerado':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      allVillainsDamaged = true;
+      break;
+    case 'Garras de raposa':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) ponto de dano/)[1]);
+      break;
+    case 'Machado de pedra':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) ponto de dano/)[1]);
+      break;
+    case 'Rasteira':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) ponto de dano/)?.[1] || 0);
+      break;
+    case 'Chute giratório':
+      damageDealt = parseInt(attackChosen.description.match(/causa (\d+) pontos de danos/)[1]);
+      break;
+    case 'Socos rápidos':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Lâmina de Luz':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Lançamento de estilhaços':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Raízes Sufocantes':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Enredar':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) ponto de dano/)?.[1] || 0);
+      villainImmobilized = true;
+      break;
+    case 'Pó mágico':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) ponto de dano/)[1]);
+      villainAttackReduced = 1;
+      break;
+    case 'Ataque de fada':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Ilusão':
+      villainStunned = true;
+      break;
+    case 'Barreira Elemental':
+      heroProtected = true;
+      break;
+    case 'Modo rajada':
+      damageDealt = parseInt(attackChosen.description.match(/causa (\d+) pontos de dano/)[1]);
+      break;
+    case 'Carga Blindada':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      villainStunned = true;
+      break;
+    case 'Absorção Emocional':
+      defenseBoost = 2; // Reduz 2 pontos de dano do vilão
+      break;
+    case 'Infusão de Coragem':
+      attackBoost = 2; // Aumenta o dano dos ataques de um aliado em 2
+      log('Habilidade de Infusão de Coragem precisa de seleção de alvo.');
+      break;
+    case 'Vórtice de areia':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      allVillainsDamaged = true;
+      break;
+    case 'Ataque de Fúria':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      allVillainsDamaged = true;
+      break;
+    case 'Grito de Guerra':
+      if (hero.name === 'Kriegen') {
+        hero.hp = Math.min(hero.hp + 1, hero.maxHp);
+        hero.attackBoost = (hero.attackBoost || 0) + 1; // Para o próximo ataque
+        log(`${hero.name} recupera 1 HP e ganha +1 ataque no próximo ataque!`);
+      } else if (hero.name === 'Major Duk') {
+        damageDealt = 1; // Dano a todos os vilões
+        defenseBoost = 1; // Aumenta defesa de todos os heróis
+        allVillainsDamaged = true;
+        log(`${hero.name} aumenta a defesa de todos os heróis em 1!`);
+      }
+      break;
+    case 'Paradoxo':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      selfDamage = 2;
+      hero.hp = Math.max(0, hero.hp - selfDamage);
+      log(`${hero.name} perde ${selfDamage} HP!`);
+      showDamageIndicator(document.getElementById('heroInfo'), selfDamage);
+      break;
+    case 'Raio':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Tornado':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Chuva ácida':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      allVillainsDamaged = true;
+      break;
+    case 'Agarrão poderoso':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Sopro da floresta':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      allVillainsDamaged = true;
+      break;
+    case 'Imã Poderoso':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      allVillainsDamaged = true;
+      villainImmobilized = true;
+      break;
+    case 'Levitação':
+      heroEscaped = true;
+      break;
+    case 'Proteção Celestial':
+      heroProtected = true;
+      break;
+    case 'Voo Relâmpago':
+      teleported = true;
+      break;
+    default:
+      log('Ataque não implementado: ' + attackChosen.name);
+      break;
+  }
+
+  if (allVillainsDamaged) {
+    regions[hero.region].villains.forEach(v => {
+      if (v.hp > 0) {
+        const damage = Math.max(1, damageDealt - (v.defense || 0));
+        v.hp = Math.max(0, v.hp - damage);
+        log(`${hero.name} ataca ${v.name} causando ${damage} de dano!`);
+        showDamageIndicator(document.querySelector(`#map div:nth-child(${gameState.selectedRegion + 1})`), damage);
+      }
+    });
+  } else if (damageDealt > 0) {
+    const damage = Math.max(1, damageDealt - (villain.defense || 0));
+    villain.hp = Math.max(0, villain.hp - damage);
+    log(`${hero.name} ataca ${villain.name} causando ${damage} de dano!`);
+    showDamageIndicator(document.querySelector(`#map div:nth-child(${gameState.selectedRegion + 1})`), damage);
+  }
+
+  if (villainFrozen) villain.frozen = true;
+  if (villainStunned) villain.stunned = true;
+  if (villainImmobilized) villain.immobilized = true;
+  if (villainAttackReduced > 0) villain.attack -= villainAttackReduced;
+
+  gameState.actionsUsed.attack = true;
+  
+  if (villain.hp <= 0) {
+    log(`${villain.name} foi derrotado!`);
+    region.villain = null;
+    checkVictory();
+  }
+  
+  updateUI();
+}mage = 0;
+  let defenseBoost = 0;
+  let attackBoost = 0;
+  let heroInvisible = false;
+  let villainAttackReduced = 0;
+  let heroEscaped = false;
+  let villainImmobilized = false;
+
+  switch(attackChosen.name) {
+    case 'Amplificação de Poder':
+      // Implementar lógica de amplificação de poder em um aliado
+      log('Habilidade de Amplificação de Poder precisa de seleção de alvo.');
+      break;
+    case 'Golpe Telecinético':
+    case 'Investida Furiosa':
+    case 'Raio Cósmico':
+    case 'Relâmpago':
+    case 'Golpe Feroz':
+    case 'Soco Sônico':
+    case 'Presas Afiadas':
+    case 'Ataque básico':
+    case 'Golpe de sombra':
+    case 'Raio de Luz':
+    case 'Raio laser':
+    case 'Golpe de areia':
+    case 'Soco devastador':
+    case 'Flecha de fogo':
+    case 'Esticar soco':
+    case 'Corte relâmpago':
+    case 'Golpe Magnético':
+    case 'Golpe de Vinha':
+    case 'Pó mágico':
+    case 'Bola de Fogo':
+    case 'Disparo de laser simples':
+    case 'Soco de ferro':
+    case 'Ataque Veloz':
+    case 'Projéteis telecinéticos':
+    case 'Explosão de Empatia':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Onda de Choque Mental':
+    case 'Tempestade de Gelo':
+    case 'Redemoinho de Flechas':
+    case 'Salto Explosivo':
+    case 'Arremesso de Granada':
+    case 'Choque Elétrico':
+    case 'Tempestade de Fogo':
+    case 'Explosão Estelar':
+    case 'Tornado Sônico':
+    case 'Uivo Ensurdecedor':
+    case 'Rajada temporal':
+    case 'Rajada sônica':
+    case 'Explosão de Luz':
+    case 'Granada de pulso':
+    case 'Tornado de areia':
+    case 'Chuva de areia':
+    case 'Furacão':
+    case 'Tempestade elétrica':
+    case 'Pisão sísmico':
+    case 'Sopro da floresta':
+    case 'Chicote elástico':
+    case 'Golpe giratório':
+    case 'Onda Magnética':
+    case 'Tempestade Magnética':
+    case 'Florescência':
+    case 'Frenesi de asas':
+    case 'Pulso eletromagnético':
+    case 'Impacto Sônico':
+    case 'Explosão de Energia':
+    case 'Terremoto':
+    case 'Tempestade Vegetal':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      allVillainsDamaged = true;
+      break;
+    case 'Ataque Mental Preciso':
+    case 'Garras Afiadas':
+    case 'Raio de Fogo':
+    case 'Arremesso':
+    case 'Descarga Elétrica':
+    case 'Investida Enfurecida':
+    case 'Implosão Estelar':
+    case 'Ataque Aéreo':
+    case 'Garras Mortais':
+    case 'Corte crescente':
+    case 'Crescimento Acelerado':
+    case 'Raio de luz':
+    case 'Disparo triplo':
+    case 'Golpe de martelo':
+    case 'Investida Fantasma':
+    case 'Deslocamento de objetos':
+    case 'Golpe Aéreo Devastador':
+    case 'Soco Dourado':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Barreira Psíquica':
+    case 'Escudo Mágico':
+    case 'Camuflagem Felina':
+    case 'Escudo Divino':
+    case 'Teleporte Tático':
+    case 'Barreira Teleportada':
+    case 'Proteção impenetrável':
+    case 'Escudo de cipó':
+    case 'Defesa perfeita':
+    case 'Escudo de Metal':
+    case 'Escudo de Luz':
+    case 'Campo de força':
+    case 'Escudo telecinético':
+    case 'Aura Calmante':
+    case 'Proteção Celestial':
+    case 'Campo de Força Reluzente':
+    case 'Escudo de energia':
+      heroProtected = true;
+      log(`${hero.name} se protegeu!`);
+      break;
+    case 'Manipulação Mental':
+    case 'Encantamento':
+      villainStunned = true;
+      log(`${hero.name} controlou a mente de ${villain.name}!`);
+      break;
+    case 'Cura Mágica':
+    case 'Elmo de Cura':
+    case 'Poção Mágica':
+    case 'Teleporte de Suporte':
+    case 'Campo Elétrico':
+    case 'Reparos Automáticos':
+      healAmount = parseInt(attackChosen.description.match(/Recupera (\d+) pontos de vida/)?.[1] || 0);
+      if (isNaN(healAmount)) healAmount = parseInt(attackChosen.description.match(/Adiciona (\d+) ponto de vida/)?.[1] || 0);
+      if (isNaN(healAmount)) healAmount = hero.maxHp; // Poção Mágica
+      hero.hp = Math.min(hero.hp + healAmount, hero.maxHp);
+      log(`${hero.name} recuperou ${healAmount} HP.`);
+      showHealIndicator(document.getElementById('heroInfo'), healAmount);
+      break;
+    case 'Teleporte':
+    case 'Teletransporte Cósmico':
+    case 'Teleporte em Massa':
+    case 'Voo Relâmpago':
+      teleported = true;
+      log(`${hero.name} se teletransportou!`);
+      break;
+    case 'Ataque Duplo':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      // A descrição do ataque duplo do Kriegen é diferente, precisa de tratamento especial
+      if (hero.name === 'Kriegen') {
+        damageDealt = 1; // Cada ataque causa 1 de dano, são 2 ataques
+        villain.hp = Math.max(0, villain.hp - damageDealt);
+        log(`${hero.name} ataca ${villain.name} causando ${damageDealt} de dano!`);
+        showDamageIndicator(document.querySelector(`#map div:nth-child(${gameState.selectedRegion + 1})`), damageDealt);
+        damageDealt = 1;
+      }
+      break;
+    case 'Rugido Atordoante':
+    case 'Eletricidade Estática':
+    case 'Campo Gravitacional':
+    case 'Ataque de Paralisia':
+    case 'Ilusão sonora':
+    case 'Raio Cegante':
+    case 'Choque elétrico':
+    case 'Areia movediça':
+    case 'Imobilização telecinética':
+    case 'Desespero Manipulado':
+    case 'Furacão Aéreo':
+    case 'Carga Blindada':
+    case 'Tempestade temporal':
+      villainStunned = true;
+      log(`${villain.name} foi paralisado/atordoado!`);
+      break;
+    case 'Salto Ágil':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) ponto de dano/)?.[1] || 0);
+      heroProtected = true;
+      break;
+    case 'Grito de Guerra':
+      if (hero.name === 'Kriegen') {
+        hero.hp = Math.min(hero.hp + 1, hero.maxHp);
+        hero.attackBoost = (hero.attackBoost || 0) + 1; // Para o próximo ataque
+        log(`${hero.name} recupera 1 HP e ganha +1 ataque no próximo ataque!`);
+      } else if (hero.name === 'Major Duk') {
+        damageDealt = 1; // Dano a todos os vilões
+        defenseBoost = 1; // Aumenta defesa de todos os heróis
+        allVillainsDamaged = true;
+        log(`${hero.name} aumenta a defesa de todos os heróis em 1!`);
+      }
+      break;
+    case 'Ataque Relâmpago':
+      damageDealt = parseInt(attackChosen.description.match(/Dano de (\d+) pontos de vida/)[1]);
+      selfDamage = 2;
+      hero.hp = Math.max(0, hero.hp - selfDamage);
+      log(`${hero.name} recebe ${selfDamage} de dano de volta!`);
+      showDamageIndicator(document.getElementById('heroInfo'), selfDamage);
+      break;
+    case 'Carga Total':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      selfDamage = 2;
+      hero.hp = Math.max(0, hero.hp - selfDamage);
+      log(`${hero.name} perde ${selfDamage} HP!`);
+      showDamageIndicator(document.getElementById('heroInfo'), selfDamage);
+      break;
+    case 'Salto Poderoso':
+      heroEscaped = true;
+      log(`${hero.name} esquivou do ataque!`);
+      break;
+    case 'Barreira de Fogo':
+      heroProtected = true;
+      damageDealt = 1; // Dano aos inimigos que se aproximarem
+      allVillainsDamaged = true;
+      break;
+    case 'Fúria Ardente':
+      damageDealt = parseInt(attackChosen.description.match(/causa (\d+) pontos de dano/)[1]);
+      break;
+    case 'Invocação de Lobos':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      allVillainsDamaged = true;
+      break;
+    case 'Reflexos aprimorados':
+      heroEscaped = true;
+      log(`${hero.name} escapou do ataque!`);
+      break;
+    case 'Contragolpe':
+      heroEscaped = true;
+      damageDealt = 2;
+      log(`${hero.name} contra-atacou!`);
+      break;
+    case 'Escudo de areia':
+      heroProtected = true;
+      log(`${hero.name} se protegeu com escudo de areia!`);
+      break;
+    case 'Nevasca':
+      damageDealt = 1;
+      villainAttackReduced = 2;
+      allVillainsDamaged = true;
+      log(`${villain.name} teve seu ataque reduzido em ${villainAttackReduced}!`);
+      break;
+    case 'Arremesso de objetos':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) ponto de dano/)?.[1] || 0);
+      break;
+    case 'Lança de madeira':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Punho Elástico':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Vórtice de areia':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      allVillainsDamaged = true;
+      break;
+    case 'Dispersão de Luz':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Aniquilação':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Uppercut':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Dança dos Ventos':
+      damageDealt = parseInt(attackChosen.description.match(/causando dano de (\d+) pontos de vida/)[1]);
+      break;
+    case 'Desorientação':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      allVillainsDamaged = true;
+      villainStunned = true;
+      break;
+    case 'Soco Dourado':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Raio Solar':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Arremesso de escombros':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Míssil guiado':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Corte crescente':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Voo da borboleta':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Transformação em Animal':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Ataque Furtivo':
+      damageDealt = parseInt(attackChosen.description.match(/causando dano de (\d+) pontos de vida/)[1]);
+      break;
+    case 'Ataque telecinético':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Crescimento Acelerado':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      allVillainsDamaged = true;
+      break;
+    case 'Garras de raposa':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) ponto de dano/)[1]);
+      break;
+    case 'Machado de pedra':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) ponto de dano/)[1]);
+      break;
+    case 'Rasteira':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) ponto de dano/)?.[1] || 0);
+      break;
+    case 'Chute giratório':
+      damageDealt = parseInt(attackChosen.description.match(/causa (\d+) pontos de danos/)[1]);
+      break;
+    case 'Socos rápidos':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Lâmina de Luz':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Lançamento de estilhaços':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Raízes Sufocantes':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Enredar':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) ponto de dano/)?.[1] || 0);
+      villainImmobilized = true;
+      break;
+    case 'Pó mágico':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) ponto de dano/)[1]);
+      villainAttackReduced = 1;
+      break;
+    case 'Ataque de fada':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Ilusão':
+      villainStunned = true;
+      break;
+    case 'Barreira Elemental':
+      heroProtected = true;
+      break;
+    case 'Modo rajada':
+      damageDealt = parseInt(attackChosen.description.match(/causa (\d+) pontos de dano/)[1]);
+      break;
+    case 'Carga Blindada':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      villainStunned = true;
+      break;
+    case 'Absorção Emocional':
+      defenseBoost = 2; // Reduz 2 pontos de dano do vilão
+      break;
+    case 'Infusão de Coragem':
+      attackBoost = 2; // Aumenta o dano dos ataques de um aliado em 2
+      log('Habilidade de Infusão de Coragem precisa de seleção de alvo.');
+      break;
+    case 'Vórtice de areia':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      allVillainsDamaged = true;
+      break;
+    case 'Ataque de Fúria':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      allVillainsDamaged = true;
+      break;
+    case 'Grito de Guerra':
+      if (hero.name === 'Kriegen') {
+        hero.hp = Math.min(hero.hp + 1, hero.maxHp);
+        hero.attackBoost = (hero.attackBoost || 0) + 1; // Para o próximo ataque
+        log(`${hero.name} recupera 1 HP e ganha +1 ataque no próximo ataque!`);
+      } else if (hero.name === 'Major Duk') {
+        damageDealt = 1; // Dano a todos os vilões
+        defenseBoost = 1; // Aumenta defesa de todos os heróis
+        allVillainsDamaged = true;
+        log(`${hero.name} aumenta a defesa de todos os heróis em 1!`);
+      }
+      break;
+    case 'Paradoxo':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      selfDamage = 2;
+      hero.hp = Math.max(0, hero.hp - selfDamage);
+      log(`${hero.name} perde ${selfDamage} HP!`);
+      showDamageIndicator(document.getElementById('heroInfo'), selfDamage);
+      break;
+    case 'Raio':
+      damageDealt = parseInt(attackChosen.description.match(/causando (\d+) pontos de dano/)[1]);
+      break;
+    case 'Tornado':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Chuva ácida':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      allVillainsDamaged = true;
+      break;
+    case 'Agarrão poderoso':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      break;
+    case 'Sopro da floresta':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      allVillainsDamaged = true;
+      break;
+    case 'Imã Poderoso':
+      damageDealt = parseInt(attackChosen.description.match(/Causa (\d+) pontos? de dano/)?.[1] || 0);
+      allVillainsDamaged = true;
+      villainImmobilized = true;
+      break;
+    case 'Levitação':
+      heroEscaped = true;
+      break;
+    case 'Proteção Celestial':
+      heroProtected = true;
+      break;
+    case 'Voo Relâmpago':
+      teleported = true;
+      break;
+    default:
+      log('Ataque não implementado: ' + attackChosen.name);
+      break;
+  }
+
+  if (allVillainsDamaged) {
+    region.heroes.forEach(h => {
+      if (h.hp > 0) {
+        const damage = Math.max(1, damageDealt - (villain.defense || 0));
+        villain.hp = Math.max(0, villain.hp - damage);
+        log(`${hero.name} ataca todos os vilões na região causando ${damage} de dano!`);
+        showDamageIndicator(document.querySelector(`#map div:nth-child(${gameState.selectedRegion + 1})`), damage);
+      }
+    });
+  } else if (damageDealt > 0) {
+    const damage = Math.max(1, damageDealt - (villain.defense || 0));
+    villain.hp = Math.max(0, villain.hp - damage);
+    log(`${hero.name} ataca ${villain.name} causando ${damage} de dano!`);
+    showDamageIndicator(document.querySelector(`#map div:nth-child(${gameState.selectedRegion + 1})`), damage);
+  }
+
+  if (villainFrozen) villain.frozen = true;
+  if (villainStunned) villain.stunned = true;
+  if (villainImmobilized) villain.immobilized = true;
+  if (villainAttackReduced > 0) villain.attack -= villainAttackReduced;
+
+  gameState.actionsUsed.attack = true;
+  
+  if (villain.hp <= 0) {
+    log(`${villain.name} foi derrotado!`);
+    region.villain = null;
+    checkVictory();
+  }
+  
+  updateUI();
+}
+
+function special(){
+  if (!gameState.selectedHero || gameState.actionsUsed.special) return;
+  
+  const hero = gameState.selectedHero;
+  gameState.actionsUsed.special = true;
+  
+  switch(hero.ability) {
+    case 'battle_fury':
+      hero.hp = Math.min(hero.hp + 3, hero.maxHp);
+      hero.attackBoost = (hero.attackBoost || 0) + 2;
+      log(`${hero.name} usa Fúria de Batalha! Recupera 3 HP e ganha +2 ataque!`);
+      break;
+      
+    case 'magic_missile':
+      if (gameState.selectedRegion !== null) {
+        const region = regions[gameState.selectedRegion];
+        if (region.villain && region.villain.hp > 0) {
+          const damage = 4; // Dano fixo mágico
+          region.villain.hp = Math.max(0, region.villain.hp - damage);
+          log(`${hero.name} lança Míssil Mágico causando ${damage} de dano mágico!`);
+          if (region.villain.hp <= 0) {
+            log(`${region.villain.name} foi derrotado!`);
+            region.villain = null;
+            checkVictory();
+          }
+        } else {
+          log(`${hero.name} lança Míssil Mágico, mas não há alvo válido!`);
+        }
+      } else {
+        log('Selecione uma região para usar Míssil Mágico!');
+      }
+      break;
+      
+    case 'precise_shot':
+      hero.rangedAttack = true;
+      hero.attackBoost = (hero.attackBoost || 0) + 1;
+      log(`${hero.name} usa Tiro Certeiro! Pode atacar qualquer região com +1 ataque!`);
+      break;
+      
+    case 'divine_heal':
+      if (hero.region !== null) {
+        const region = regions[hero.region];
+        let healedCount = 0;
+        region.heroes.forEach(h => {
+          if (h.hp < h.maxHp) {
+            h.hp = Math.min(h.hp + 3, h.maxHp);
+            healedCount++;
+          }
+        });
+        log(`${hero.name} usa Cura Divina! ${healedCount} heróis foram curados na região!`);
+      }
+      break;
+      
+    case 'stealth':
+      hero.invisible = true;
+      hero.attackBoost = (hero.attackBoost || 0) + 3; // Ataque pelas costas
+      log(`${hero.name} usa Furtividade! Fica invisível e ganha +3 ataque!`);
+      break;
+      
+    default:
+      log(`${hero.name} usa sua habilidade especial!`);
+  }
+  
+  updateUI();
+}
+
+function moveHero(){
+  if (!gameState.selectedHero || gameState.actionsUsed.move) return;
+  if (gameState.selectedRegion === null) {
+    log('Selecione uma região de destino primeiro.');
+    return;
+  }
+  
+  const hero = gameState.selectedHero;
+  const currentRegion = hero.region;
+  const targetRegion = gameState.selectedRegion;
+  
+  if (currentRegion === targetRegion) {
+    log(`${hero.name} já está nesta região.`);
+    return;
+  }
+  
+  // Remove herói da região atual
+  regions[currentRegion].heroes = regions[currentRegion].heroes.filter(h => h !== hero);
+  
+  // Adiciona herói na nova região
+  regions[targetRegion].heroes.push(hero);
+  hero.region = targetRegion;
+  
+  gameState.actionsUsed.move = true;
+  log(`${hero.name} se moveu para ${regions[targetRegion].name}.`);
+  
+  updateUI();
+}
+
+function healHero(){
+  if (!gameState.selectedHero || gameState.actionsUsed.heal) return;
+  
+  const hero = gameState.selectedHero;
+  if (hero.hp >= hero.maxHp) {
+    log(`${hero.name} já está com HP máximo.`);
+    return;
+  }
+  
+  const healAmount = 3;
+  hero.hp = Math.min(hero.hp + healAmount, hero.maxHp);
+  gameState.actionsUsed.heal = true;
+  
+  log(`${hero.name} se cura e recupera ${healAmount} HP.`);
+  updateUI();
+}
+
+function pickEquipment(){
+  if (!gameState.selectedHero || gameState.actionsUsed.equipment) return;
+  if (gameState.selectedRegion === null) {
+    log('Selecione uma região primeiro.');
+    return;
+  }
+  
+  const hero = gameState.selectedHero;
+  const region = regions[gameState.selectedRegion];
+  
+  if (hero.region !== gameState.selectedRegion) {
+    log(`${hero.name} não está na região selecionada.`);
+    return;
+  }
+  
+  let eq = region.equipments.find(e => e.hidden);
+  if (!eq) {
+    log('Sem equipamentos ocultos nesta região.');
+    return;
+  }
+  
+  eq.hidden = false;
+  hero.equipment.push(eq);
+  gameState.actionsUsed.equipment = true;
+  
+  log(`${hero.name} pegou ${eq.name}.`);
+  eq.effect(hero);
+  
+  updateUI();
+}
+
+function endTurn(){
+  // Reset de ações
+  gameState.actionsUsed = {
+    attack: false,
+    special: false,
+    move: false,
+    heal: false,
+    equipment: false
+  };
+  
+  // Ataques dos vilões com comportamentos únicos
+  regions.forEach(region => {
+    if (region.villain && region.villain.hp > 0 && !region.villain.frozen) {
+      const villain = region.villain;
+      const heroesInRegion = region.heroes.filter(h => h.hp > 0 && !h.invisible);
+      
+      // Usar habilidade especial do vilão se disponível
+      if (!villain.abilityUsed) {
+        useVillainAbility(villain, region);
+        villain.abilityUsed = true;
+      }
+      
+      if (heroesInRegion.length > 0) {
+        const targetHero = heroesInRegion[Math.floor(Math.random() * heroesInRegion.length)];
+        let damage = Math.max(1, villain.attack - (targetHero.defense + (targetHero.defenseBoost || 0)));
+        
+        // Modificadores baseados na habilidade do vilão
+        if (villain.ability === 'rage' && villain.hp < villain.maxHp / 2) {
+          damage += 2; // Fúria quando ferido
+          log(`${villain.name} entra em fúria!`);
+        }
+        
+        if (villain.ability === 'stealth') {
+          damage += 1; // Ataque surpresa
+          log(`${villain.name} ataca de surpresa!`);
+        }
+        
+        if (targetHero.reflectDamage) {
+          villain.hp = Math.max(0, villain.hp - damage);
+          log(`${targetHero.name} reflete o ataque de ${villain.name}!`);
+          if (villain.hp <= 0) {
+            log(`${villain.name} foi derrotado pelo reflexo!`);
+            region.villain = null;
+            checkVictory();
+          }
+        } else {
+          targetHero.hp = Math.max(0, targetHero.hp - damage);
+          log(`${villain.name} ataca ${targetHero.name} causando ${damage} de dano!`);
+          
+          if (targetHero.hp <= 0) {
+            log(`${targetHero.name} foi derrotado!`);
+            checkDefeat();
+          }
+        }
+      }
+    }
+    
+    // Remove efeitos temporários
+    if (region.villain) {
+      region.villain.frozen = false;
+    }
+  });
+  
+  // Remove efeitos temporários dos heróis
+  heroes.forEach(hero => {
+    hero.invisible = false;
+    hero.canTeleport = false;
+    hero.rangedAttack = false;
+  });
+  
+  gameState.turn++;
+  updateUI();
+  log(`--- Fim do turno ${gameState.turn - 1} ---`);
+}
+
+function useVillainAbility(villain, region) {
+  switch(villain.ability) {
+    case 'rage':
+      if (villain.hp < villain.maxHp / 2) {
+        villain.attack += 1;
+        log(`${villain.name} entra em fúria permanente! Ataque aumentado!`);
+      }
+      break;
+      
+    case 'chaos':
+      const effects = ['confuse', 'weaken', 'poison'];
+      const effect = effects[Math.floor(Math.random() * effects.length)];
+      const heroesInRegion = region.heroes.filter(h => h.hp > 0);
+      if (heroesInRegion.length > 0) {
+        const target = heroesInRegion[Math.floor(Math.random() * heroesInRegion.length)];
+        switch(effect) {
+          case 'confuse':
+            log(`${villain.name} confunde ${target.name}! Próximo ataque será reduzido!`);
+            target.confused = true;
+            break;
+          case 'weaken':
+            target.attackBoost = (target.attackBoost || 0) - 1;
+            log(`${villain.name} enfraquece ${target.name}! Ataque reduzido!`);
+            break;
+          case 'poison':
+            target.hp = Math.max(1, target.hp - 1);
+            log(`${villain.name} envenena ${target.name}! Perde 1 HP!`);
+            break;
+        }
+      }
+      break;
+      
+    case 'armor':
+      villain.defense += 1;
+      log(`${villain.name} fortalece sua armadura! Defesa aumentada!`);
+      break;
+      
+    case 'drain':
+      const allHeroes = region.heroes.filter(h => h.hp > 0);
+      if (allHeroes.length > 0) {
+        allHeroes.forEach(hero => {
+          hero.hp = Math.max(1, hero.hp - 1);
+        });
+        villain.hp = Math.min(villain.hp + allHeroes.length, villain.maxHp);
+        log(`${villain.name} drena vida de todos os heróis na região!`);
+      }
+      break;
+  }
+}
+
+function checkVictory() {
+  const remainingVillains = regions.filter(r => r.villain && r.villain.hp > 0).length;
+  if (remainingVillains === 0) {
+    log('🎉 VITÓRIA! Todos os vilões foram derrotados! O mundo está salvo!');
+    showVictoryMessage();
+    disableAllButtons();
+  }
+}
+
+function checkDefeat() {
+  const aliveHeroes = heroes.filter(h => h.hp > 0).length;
+  if (aliveHeroes === 0) {
+    log('💀 DERROTA! Todos os heróis foram derrotados...');
+    showDefeatMessage();
+    disableAllButtons();
+  }
+}
+
+function disableAllButtons() {
+  document.querySelectorAll('button').forEach(btn => {
+    if (btn.id !== 'rollDiceBtn') {
+      btn.disabled = true;
+    }
+  });
+}
+
+function showDamageIndicator(element, damage) {
+  const indicator = document.createElement('div');
+  indicator.className = 'damage-indicator';
+  indicator.textContent = `-${damage}`;
+  element.appendChild(indicator);
+  setTimeout(() => {
+    if (indicator.parentNode) {
+      indicator.parentNode.removeChild(indicator);
+    }
+  }, 1000);
+}
+
+function showHealIndicator(element, heal) {
+  const indicator = document.createElement('div');
+  indicator.className = 'heal-indicator';
+  indicator.textContent = `+${heal}`;
+  element.appendChild(indicator);
+  setTimeout(() => {
+    if (indicator.parentNode) {
+      indicator.parentNode.removeChild(indicator);
+    }
+  }, 1000);
+}
+
+function showVictoryMessage() {
+  const message = document.createElement('div');
+  message.className = 'victory-message';
+  message.innerHTML = '🎉 VITÓRIA!<br>Todos os vilões foram derrotados!<br>O mundo está salvo!';
+  document.body.appendChild(message);
+}
+
+function showDefeatMessage() {
+  const message = document.createElement('div');
+  message.className = 'defeat-message';
+  message.innerHTML = '💀 DERROTA!<br>Todos os heróis foram derrotados...<br>O mundo está perdido!';
+  document.body.appendChild(message);
+}
+
+function log(msg){
+  const logDiv = document.getElementById('log');
+  logDiv.innerHTML += msg + '<br>';
+  logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+// Inicialização
+updateUI();
+log('Bem-vindo ao Salve o Mundo! Selecione um herói e comece sua aventura!');
+</script>
+</body>
+</html>
+
