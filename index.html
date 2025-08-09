@@ -456,12 +456,19 @@ function updateButtons() {
   const hasVillainInRegion = hasRegion && regions[gameState.selectedRegion].villain && regions[gameState.selectedRegion].villain.hp > 0;
   const hasEquipmentInRegion = hasRegion && regions[gameState.selectedRegion].equipments.some(e => e.hidden);
   
-  document.getElementById('attackBtn').disabled = !hasHero || !heroInSelectedRegion || !hasVillainInRegion || gameState.actionsUsed.attack;
-  document.getElementById('specialBtn').disabled = !hasHero || gameState.actionsUsed.special;
-  document.getElementById('moveBtn').disabled = !hasHero || gameState.actionsUsed.move;
-  document.getElementById('healBtn').disabled = !hasHero || gameState.selectedHero.hp >= gameState.selectedHero.maxHp || gameState.actionsUsed.heal;
-  document.getElementById('pickEquipmentBtn').disabled = !hasHero || !heroInSelectedRegion || !hasEquipmentInRegion || gameState.actionsUsed.equipment;
+  document.getElementById("attackBtn").disabled = !hasHero || !heroInSelectedRegion || !hasVillainInRegion || gameState.actionsUsed.attack;
+  document.getElementById("specialBtn").disabled = !hasHero || gameState.actionsUsed.special;
+  document.getElementById("moveBtn").disabled = !hasHero || gameState.actionsUsed.move;
+  document.getElementById("healBtn").disabled = !hasHero || gameState.selectedHero.hp >= gameState.selectedHero.maxHp || gameState.actionsUsed.heal;
+  document.getElementById("pickEquipmentBtn").disabled = !hasHero || !heroInSelectedRegion || !hasEquipmentInRegion || gameState.actionsUsed.equipment;
 }
+
+// Inicializa o jogo quando a página é carregada
+window.onload = () => {
+  initMap();
+  initHeroList();
+  updateUI();
+};
 
 function rollDice(){
   if (!gameState.selectedHero) { 
